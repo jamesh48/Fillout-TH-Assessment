@@ -122,7 +122,9 @@ export class FilloutStack extends cdk.Stack {
     importedALBListener.addTargetGroups('fillout-listener-tg', {
       targetGroups: [targetGroup],
       priority: 55,
-      conditions: [elbv2.ListenerCondition.pathPatterns(['/*'])],
+      conditions: [
+        elbv2.ListenerCondition.hostHeaders(['www.lmkn.net', 'lmkn.net']),
+      ],
     });
   }
 }
