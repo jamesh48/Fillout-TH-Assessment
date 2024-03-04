@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
+import * as dotenv from 'dotenv';
+dotenv.config({ path: './.env' });
+//
 import * as cdk from 'aws-cdk-lib';
 import { FilloutStack } from '../lib/fillout-stack';
 
