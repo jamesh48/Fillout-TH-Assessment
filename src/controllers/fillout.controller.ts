@@ -57,25 +57,23 @@ const submissions = async (
   try {
     let { filters, limit, offset, ...params } = req.query;
 
-    limit = Number(limit);
-    offset = Number(offset);
-    if (isNaN(limit)) {
-      limit = 150;
-    }
-
-    if (isNaN(offset)) {
-      offset = 0;
-    }
+    limit = Number(limit || 150);
+    offset = Number(offset || 0);
 
     if (filters) {
       if (limit > 150 || limit < 0) {
-        return res.status(400).send({ error: 'Invalid Limit' });
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .send({ error: 'Invalid Limit' });
       }
 
       if (offset > 150 || offset < 0) {
-        return res.status(400).send({ error: 'Invalid Offset' });
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .send({ error: 'Invalid Offset' });
       }
     }
+
     const { data } = await axios<{
       totalResponses: number;
       pageCount: number;
@@ -125,30 +123,10 @@ const submissions = async (
       });
 
       data.totalResponses = result.length;
-
-      data.pageCount = (() => {
-        if (limit) {
-          return Math.ceil(result.length / limit);
-        }
-        return Math.ceil(result.length / 150);
-      })();
-
-      data.responses = (() => {
-        if (offset && limit) {
-          return result.slice(offset, offset + limit);
-        }
-
-        if (offset) {
-          return result.slice(offset);
-        }
-
-        if (limit) {
-          return result.slice(0, limit);
-        }
-        return result;
-      })();
-      // Current Page would also conceivably be possible
+      data.pageCount = Math.ceil(result.length / limit);
+      data.responses = result.slice(offset, offset + limit);
     }
+    // Current Page would also conceivably be possible
     return res.status(StatusCodes.OK).json({ data });
   } catch (err) {
     return handleError(res, err);
