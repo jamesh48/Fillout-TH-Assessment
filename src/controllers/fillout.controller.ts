@@ -36,18 +36,64 @@ interface Question {
   value: string;
 }
 
-const submissions = async (req: Request<{ formId: string }>, res: Response) => {
+const submissions = async (
+  req: Request<
+    { formId: string },
+    {},
+    {},
+    {
+      filters: string;
+      limit: number;
+      afterDate: string;
+      beforeDate: string;
+      offset: number;
+      sort: 'asc' | 'desc';
+      status: 'in_progress' | 'finished';
+      includeEditLink: true;
+    }
+  >,
+  res: Response
+) => {
   try {
-    const { data } = await axios<{ responses: { questions: Question[] }[] }>({
+    let { filters, limit, offset, ...params } = req.query;
+
+    limit = Number(limit);
+    offset = Number(offset);
+
+    if (filters) {
+      if (limit > 150 || limit < 0) {
+        return res.status(400).send({ error: 'Invalid Limit' });
+      }
+
+      if (offset > 150 || offset < 0) {
+        return res.status(400).send({ error: 'Invalid Offset' });
+      }
+    }
+    const { data } = await axios<{
+      totalResponses: number;
+      pageCount: number;
+      responses: { questions: Question[] }[];
+    }>({
       method: 'GET',
       url: `${config.apiBaseUrl}/v1/api/forms/${req.params.formId}/submissions`,
+      params: {
+        ...params,
+        // If Filters are defined, this proxy server assumes control of pagination, otherwise it just proxies the existing query
+        ...(() => {
+          if (filters) {
+            return {};
+          }
+
+          return { offset, limit };
+        })(),
+      },
       headers: {
         Authorization: `Bearer ${config.filloutApiKey}`,
       },
     });
-    console.log(data);
-    if (req.query.filters) {
-      const conditions = JSON.parse(req.query.filters as string) as Filter[];
+
+    if (filters) {
+      const conditions = JSON.parse(filters as string) as Filter[];
 
       const result = data.responses.filter((response) => {
         return conditions.every((condition) => {
@@ -71,7 +117,10 @@ const submissions = async (req: Request<{ formId: string }>, res: Response) => {
         });
       });
 
-      data.responses = result;
+      data.totalResponses = result.length;
+      data.pageCount = Math.ceil(result.length / limit);
+      // Current Page would also conceivably be possible
+      data.responses = result.slice(offset, offset + limit);
     }
     return res.status(StatusCodes.OK).json({ data });
   } catch (err) {
