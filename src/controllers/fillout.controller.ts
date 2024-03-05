@@ -118,9 +118,29 @@ const submissions = async (
       });
 
       data.totalResponses = result.length;
-      data.pageCount = Math.ceil(result.length / limit);
+
+      data.pageCount = (() => {
+        if (limit) {
+          return Math.ceil(result.length / limit);
+        }
+        return Math.ceil(result.length / 150);
+      })();
+
+      data.responses = (() => {
+        if (offset && limit) {
+          return result.slice(offset, offset + limit);
+        }
+
+        if (offset) {
+          return result.slice(offset);
+        }
+
+        if (limit) {
+          return result.slice(0, limit);
+        }
+        return result;
+      })();
       // Current Page would also conceivably be possible
-      data.responses = result.slice(offset, offset + limit);
     }
     return res.status(StatusCodes.OK).json({ data });
   } catch (err) {
