@@ -45,6 +45,7 @@ const submissions = async (req: Request<{ formId: string }>, res: Response) => {
         Authorization: `Bearer ${config.filloutApiKey}`,
       },
     });
+    console.log(data);
     if (req.query.filters) {
       const conditions = JSON.parse(req.query.filters as string) as Filter[];
 
