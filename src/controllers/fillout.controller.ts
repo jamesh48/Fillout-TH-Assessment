@@ -59,6 +59,13 @@ const submissions = async (
 
     limit = Number(limit);
     offset = Number(offset);
+    if (isNaN(limit)) {
+      limit = 150;
+    }
+
+    if (isNaN(offset)) {
+      offset = 0;
+    }
 
     if (filters) {
       if (limit > 150 || limit < 0) {
